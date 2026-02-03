@@ -1,0 +1,35 @@
+{
+  "name": "tmux-namer-openai",
+  "version": "1.0.0",
+  "description": "Cost-effective tmux window naming using OpenAI gpt-oss-20b",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "container",
+            "image": "tmux-namer-openai:latest",
+            "timeout": 5,
+            "buildContext": "${CLAUDE_PLUGIN_ROOT}",
+            "env": {
+              "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+            },
+            "volumes": [
+              {
+                "type": "bind",
+                "source": "${HOME}/.local/share/tmux-namer-openai",
+                "target": "${HOME}/.local/share/tmux-namer-openai"
+              },
+              {
+                "type": "bind",
+                "source": "/tmp",
+                "target": "/tmp"
+              }
+            ],
+            "network": "host"
+          }
+        ]
+      }
+    ]
+  }
+}
