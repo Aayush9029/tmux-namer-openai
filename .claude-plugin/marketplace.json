@@ -1,18 +1,17 @@
 {
   "name": "tmux-namer-openai",
-  "displayName": "tmux Window Namer (OpenAI)",
-  "description": "Cost-effective automatic tmux window naming using OpenAI's gpt-oss-20b model. Generates descriptive 2-4 word names based on user questions. ~50-400x cheaper than Claude-based solutions. Zero dependencies - uses OpenAI Responses API directly.",
-  "version": "1.0.0",
-  "author": "Aayush Pokharel",
-  "homepage": "https://github.com/Aayush9029/tmux-namer-openai",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Aayush9029/tmux-namer-openai.git"
+  "owner": {
+    "name": "Aayush9029"
   },
-  "license": "MIT",
-  "keywords": ["tmux", "window", "naming", "openai", "automation", "container"],
-  "requirements": {
-    "runtime": "container",
-    "environment": ["OPENAI_API_KEY"]
-  }
+  "metadata": {
+    "description": "OpenAI-powered tmux window naming"
+  },
+  "plugins": [
+    {
+      "name": "tmux-namer-openai",
+      "source": "./",
+      "description": "Automatically names your tmux windows based on what you're working on with Claude using OpenAI gpt-5-nano",
+      "version": "1.0.0"
+    }
+  ]
 }
