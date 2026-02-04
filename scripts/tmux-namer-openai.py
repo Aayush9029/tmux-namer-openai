@@ -92,10 +92,10 @@ def call_openai(questions):
 
     if questions:
         context = "\n".join(f"- {q}" for q in questions)
-        prompt = f"Based on these user questions:\n{context}\n\nGenerate a 2-4 word lowercase phrase describing this work session. Output ONLY the phrase, nothing else."
+        prompt = f"Based on these user questions:\n{context}\n\nGenerate a 2-3 word lowercase phrase (8-30 characters) describing this work session. Output ONLY the phrase, nothing else."
     else:
         cwd = Path.cwd().name
-        prompt = f"Generate a 2-4 word lowercase phrase for a work session in directory '{cwd}'. Output ONLY the phrase, nothing else."
+        prompt = f"Generate a 2-3 word lowercase phrase (8-30 characters) for a work session in directory '{cwd}'. Output ONLY the phrase, nothing else."
 
     payload = {
         "model": "gpt-5-nano",
