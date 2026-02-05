@@ -30,31 +30,18 @@ def get_tmux_window():
     if not os.environ.get('TMUX'):
         return None
 
-    ppid = os.getppid()
+    pane_id = os.environ.get('TMUX_PANE')
+    if not pane_id:
+        return None
 
     try:
         result = subprocess.run(
-            ['ps', '-o', 'tty=', '-p', str(ppid)],
-            capture_output=True, text=True, check=True
-        )
-        claude_tty = result.stdout.strip()
-    except subprocess.CalledProcessError:
-        return None
-
-    if not claude_tty:
-        return None
-
-    if not claude_tty.startswith('/'):
-        claude_tty = f'/dev/{claude_tty}'
-
-    try:
-        result = subprocess.run(
-            ['tmux', 'list-panes', '-a', '-F', '#{pane_tty} #{session_name}:#{window_id}'],
+            ['tmux', 'list-panes', '-a', '-F', '#{pane_id} #{session_name}:#{window_id}'],
             capture_output=True, text=True, check=True
         )
         for line in result.stdout.splitlines():
             parts = line.split()
-            if len(parts) >= 2 and parts[0] == claude_tty:
+            if len(parts) >= 2 and parts[0] == pane_id:
                 return parts[1]
     except subprocess.CalledProcessError:
         return None
@@ -132,15 +119,15 @@ def sanitize_name(name):
 
 def main():
     """Main function."""
+    try:
+        hook_data = json.load(sys.stdin)
+    except json.JSONDecodeError:
+        sys.exit(0)
+
     fork_and_exit()
 
     window_target = get_tmux_window()
     if not window_target:
-        sys.exit(0)
-
-    try:
-        hook_data = json.load(sys.stdin)
-    except json.JSONDecodeError:
         sys.exit(0)
 
     # Only rename every 3 user messages
