@@ -11,7 +11,7 @@
       "name": "tmux-namer-openai",
       "source": "./",
       "description": "Automatically names your tmux windows based on what you're working on with Claude using OpenAI gpt-5-nano",
-      "version": "1.1.0"
+      "version": "1.1.1"
     }
   ]
 }
