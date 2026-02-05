@@ -92,10 +92,10 @@ def call_openai(questions):
 
     if questions:
         context = "\n".join(f"- {q}" for q in questions)
-        prompt = f"Generate a tmux window name based on these user questions:\n{context}\n\nRequirements: 1-2 word, lowercase, 4-30 characters. Output ONLY the phrase, nothing else."
+        prompt = f"Summarize this work session in exactly 2 lowercase words separated by a space:\n{context}\n\nExamples: tmux config, fix auth, api routes, swift tests\nOutput ONLY two words:"
     else:
         cwd = Path.cwd().name
-        prompt = f"Generate a tmux window name for a work session in directory '{cwd}'. Requirements: 2-3 words, lowercase, 8-30 characters. Output ONLY the phrase, nothing else."
+        prompt = f"Summarize a work session in '{cwd}' in exactly 2 lowercase words separated by a space.\nExamples: tmux config, fix auth, api routes\nOutput ONLY two words:"
 
     payload = {
         "model": "gpt-5-nano",
