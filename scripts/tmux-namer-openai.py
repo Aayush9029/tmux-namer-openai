@@ -2,7 +2,8 @@
 """
 tmux-namer-openai.py - Rename tmux window based on user questions using OpenAI
 
-Uses gpt-5-nano model to generate a 2-4 word phrase describing the work session.
+Uses gpt-5-nano to generate a 2-word phrase describing the work session.
+Runs on PostToolUse, renames every 3 user messages.
 """
 
 import os
@@ -12,7 +13,6 @@ import subprocess
 import re
 from pathlib import Path
 from urllib.request import Request, urlopen
-from urllib.error import HTTPError, URLError
 
 
 def fork_and_exit():
@@ -35,9 +35,7 @@ def get_tmux_window():
     try:
         result = subprocess.run(
             ['ps', '-o', 'tty=', '-p', str(ppid)],
-            capture_output=True,
-            text=True,
-            check=True
+            capture_output=True, text=True, check=True
         )
         claude_tty = result.stdout.strip()
     except subprocess.CalledProcessError:
@@ -52,11 +50,8 @@ def get_tmux_window():
     try:
         result = subprocess.run(
             ['tmux', 'list-panes', '-a', '-F', '#{pane_tty} #{session_name}:#{window_id}'],
-            capture_output=True,
-            text=True,
-            check=True
+            capture_output=True, text=True, check=True
         )
-
         for line in result.stdout.splitlines():
             parts = line.split()
             if len(parts) >= 2 and parts[0] == claude_tty:
@@ -67,20 +62,25 @@ def get_tmux_window():
     return None
 
 
+def count_user_messages(hook_data):
+    """Count total user messages in conversation."""
+    count = 0
+    for message in hook_data.get('conversation', []):
+        if message.get('role') == 'user':
+            count += 1
+    return count
+
+
 def extract_user_questions(hook_data):
     """Extract last 3 user questions from conversation."""
     questions = []
-
-    conversation = hook_data.get('conversation', [])
-    for message in conversation:
+    for message in hook_data.get('conversation', []):
         if message.get('role') == 'user':
-            content = message.get('content', [])
-            for item in content:
+            for item in message.get('content', []):
                 if isinstance(item, dict) and item.get('type') == 'text':
                     text = item.get('text', '').strip()
                     if text:
                         questions.append(text)
-
     return questions[-3:] if questions else []
 
 
@@ -113,12 +113,9 @@ def call_openai(questions):
                 "Authorization": f"Bearer {api_key}"
             }
         )
-
         with urlopen(req, timeout=10) as response:
             result = json.loads(response.read().decode('utf-8'))
-
         return result['choices'][0]['message']['content'].strip()
-
     except:
         return None
 
@@ -127,32 +124,10 @@ def sanitize_name(name):
     """Sanitize name to alphanumeric and spaces only."""
     if not name:
         return ""
-
     name = re.sub(r'[^a-zA-Z0-9 ]', '', name)
-
     if len(name) > 40:
         name = name[:40]
-
     return name.strip()
-
-
-def should_rename(window_id):
-    """Check if we should rename (every other call) for this window."""
-    # Plugin root is two directories up from this script
-    plugin_root = Path(__file__).parent.parent
-    # Use window ID to keep counters separate per window
-    safe_id = window_id.replace(':', '_').replace('@', '_')
-    counter_file = plugin_root / f'.counter_{safe_id}'
-
-    try:
-        count = int(counter_file.read_text().strip()) if counter_file.exists() else 0
-    except:
-        count = 0
-
-    count += 1
-    counter_file.write_text(str(count))
-
-    return count % 2 == 0
 
 
 def main():
@@ -163,13 +138,14 @@ def main():
     if not window_target:
         sys.exit(0)
 
-    # Only rename every other call to save costs
-    if not should_rename(window_target):
-        sys.exit(0)
-
     try:
         hook_data = json.load(sys.stdin)
     except json.JSONDecodeError:
+        sys.exit(0)
+
+    # Only rename every 3 user messages
+    msg_count = count_user_messages(hook_data)
+    if msg_count == 0 or msg_count % 3 != 0:
         sys.exit(0)
 
     questions = extract_user_questions(hook_data)
