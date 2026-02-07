@@ -49,26 +49,35 @@ def get_tmux_window():
     return None
 
 
-def count_user_messages(hook_data):
-    """Count total user messages in conversation."""
-    count = 0
-    for message in hook_data.get('conversation', []):
-        if message.get('role') == 'user':
-            count += 1
-    return count
-
-
-def extract_user_questions(hook_data):
-    """Extract last 3 user questions from conversation."""
+def read_transcript(transcript_path):
+    """Read user messages from the transcript JSONL file."""
     questions = []
-    for message in hook_data.get('conversation', []):
-        if message.get('role') == 'user':
-            for item in message.get('content', []):
-                if isinstance(item, dict) and item.get('type') == 'text':
-                    text = item.get('text', '').strip()
+    user_count = 0
+    try:
+        with open(transcript_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                entry = json.loads(line)
+                if entry.get('type') == 'user':
+                    user_count += 1
+                    content = entry.get('message', {}).get('content', '')
+                    if isinstance(content, str):
+                        text = content.strip()
+                    elif isinstance(content, list):
+                        text = ' '.join(
+                            item.get('text', '') for item in content
+                            if isinstance(item, dict) and item.get('type') == 'text'
+                        ).strip()
+                    else:
+                        text = ''
                     if text:
-                        questions.append(text)
-    return questions[-3:] if questions else []
+                        # Truncate long messages to first 200 chars
+                        questions.append(text[:200])
+    except (OSError, json.JSONDecodeError):
+        pass
+    return user_count, questions[-3:] if questions else []
 
 
 def call_openai(questions):
@@ -77,12 +86,12 @@ def call_openai(questions):
     if not api_key:
         return None
 
+    cwd = Path.cwd().name
     if questions:
         context = "\n".join(f"- {q}" for q in questions)
-        prompt = f"Summarize this work session in exactly 2 lowercase words separated by a space:\n{context}\n\nExamples: tmux config, fix auth, api routes, swift tests\nOutput ONLY two words:"
+        prompt = f"Name a tmux tab for a coding session.\nProject: {cwd}\nRecent questions:\n{context}\n\nRules: 2-3 lowercase words, include short project reference and task.\nExamples: namer fix hook, blog api routes, app swift tests\nOutput ONLY the tab name:"
     else:
-        cwd = Path.cwd().name
-        prompt = f"Summarize a work session in '{cwd}' in exactly 2 lowercase words separated by a space.\nExamples: tmux config, fix auth, api routes\nOutput ONLY two words:"
+        prompt = f"Name a tmux tab for a coding session in project '{cwd}'.\nRules: 2-3 lowercase words.\nExamples: namer config, blog setup, app init\nOutput ONLY the tab name:"
 
     payload = {
         "model": "gpt-5-nano",
@@ -124,18 +133,22 @@ def main():
     except json.JSONDecodeError:
         sys.exit(0)
 
+    transcript_path = hook_data.get('transcript_path')
+    if not transcript_path:
+        sys.exit(0)
+
     fork_and_exit()
 
     window_target = get_tmux_window()
     if not window_target:
         sys.exit(0)
 
+    msg_count, questions = read_transcript(transcript_path)
+
     # Only rename every 3 user messages
-    msg_count = count_user_messages(hook_data)
     if msg_count == 0 or msg_count % 3 != 0:
         sys.exit(0)
 
-    questions = extract_user_questions(hook_data)
     name = call_openai(questions)
 
     if not name:

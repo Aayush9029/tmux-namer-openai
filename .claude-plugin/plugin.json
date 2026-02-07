@@ -1,6 +1,6 @@
 {
   "name": "tmux-namer-openai",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "Cost-effective tmux window naming using OpenAI gpt-5-nano",
   "hooks": {
     "PostToolUse": [
