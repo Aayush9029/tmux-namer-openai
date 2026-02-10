@@ -89,9 +89,9 @@ def call_openai(questions):
     cwd = Path.cwd().name
     if questions:
         context = "\n".join(f"- {q}" for q in questions)
-        prompt = f"Name a tmux tab for a coding session.\nProject: {cwd}\nRecent questions:\n{context}\n\nRules: 2-3 lowercase words, include short project reference and task.\nExamples: namer fix hook, blog api routes, app swift tests\nOutput ONLY the tab name:"
+        prompt = f"Name a tmux tab for a coding session.\nProject: {cwd}\nRecent questions:\n{context}\n\nRules: format is project:task-description, all lowercase, hyphens between task words.\nExamples: calai:manual-food-plan, youscan:cloudflare-deploy, namer:fix-hook, blog:api-routes\nOutput ONLY the tab name:"
     else:
-        prompt = f"Name a tmux tab for a coding session in project '{cwd}'.\nRules: 2-3 lowercase words.\nExamples: namer config, blog setup, app init\nOutput ONLY the tab name:"
+        prompt = f"Name a tmux tab for a coding session in project '{cwd}'.\nRules: format is project:task, all lowercase, hyphens between task words.\nExamples: calai:setup, namer:init, blog:config\nOutput ONLY the tab name:"
 
     payload = {
         "model": "gpt-5-nano",
@@ -120,7 +120,7 @@ def sanitize_name(name):
     """Sanitize name to alphanumeric and spaces only."""
     if not name:
         return ""
-    name = re.sub(r'[^a-zA-Z0-9 ]', '', name)
+    name = re.sub(r'[^a-zA-Z0-9:\- ]', '', name)
     if len(name) > 40:
         name = name[:40]
     return name.strip()
