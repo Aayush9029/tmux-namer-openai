@@ -2,7 +2,7 @@
 """
 tmux-namer-openai.py - Rename tmux window based on user questions using OpenAI
 
-Uses gpt-5-nano to generate a 2-word phrase describing the work session.
+Uses gpt-5-nano to generate a concise 1-2 word tab name describing the work session.
 Runs on PostToolUse, renames every 3 user messages.
 """
 
@@ -11,7 +11,6 @@ import sys
 import json
 import subprocess
 import re
-from pathlib import Path
 from urllib.request import Request, urlopen
 
 
@@ -86,12 +85,11 @@ def call_openai(questions):
     if not api_key:
         return None
 
-    cwd = Path.cwd().name
     if questions:
         context = "\n".join(f"- {q}" for q in questions)
-        prompt = f"Name a tmux tab for a coding session.\nProject: {cwd}\nRecent questions:\n{context}\n\nRules: format is project:task-description, all lowercase, hyphens between task words.\nExamples: calai:manual-food-plan, youscan:cloudflare-deploy, namer:fix-hook, blog:api-routes\nOutput ONLY the tab name:"
+        prompt = f"Name a tmux tab for a coding session.\nRecent questions:\n{context}\n\nRules: max 2 words, all lowercase, use hyphens within words if needed. No project name.\nExamples: food-plan, cf-deploy, fix-hook, api-routes, auth-refactor, snap-tests, debug-ci, dark-mode\nOutput ONLY the tab name:"
     else:
-        prompt = f"Name a tmux tab for a coding session in project '{cwd}'.\nRules: format is project:task, all lowercase, hyphens between task words.\nExamples: calai:setup, namer:init, blog:config\nOutput ONLY the tab name:"
+        prompt = f"Name a tmux tab for a new coding session.\nRules: max 2 words, all lowercase, use hyphens within words if needed. No project name.\nExamples: proj-setup, init, new-session\nOutput ONLY the tab name:"
 
     payload = {
         "model": "gpt-5-nano",
@@ -120,9 +118,9 @@ def sanitize_name(name):
     """Sanitize name to alphanumeric and spaces only."""
     if not name:
         return ""
-    name = re.sub(r'[^a-zA-Z0-9:\- ]', '', name)
-    if len(name) > 40:
-        name = name[:40]
+    name = re.sub(r'[^a-zA-Z0-9\- ]', '', name)
+    if len(name) > 25:
+        name = name[:25]
     return name.strip()
 
 

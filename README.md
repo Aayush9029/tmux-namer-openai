@@ -20,6 +20,8 @@ claude plugin install tmux-namer-openai@openai
 
 After every other Claude interaction, your tmux window gets renamed based on your last 3 questions (to save costs).
 
+Examples: `food-plan`, `cf-deploy`, `fix-hook`, `api-routes`, `auth-refactor`, `debug-ci`
+
 ## License
 
 MIT - [Aayush Pokharel](https://github.com/Aayush9029)
